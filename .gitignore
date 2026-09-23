@@ -1,0 +1,36 @@
+# Logs
+logs/*.log
+*.log
+
+# Local and sensitive configuration
+config/config.local.json
+.env
+.env.local
+
+# OS Generated Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# IDE and Editor Cache
+.idea/
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build and Temp Folders (if Python / .NET / Node are used)
+bin/
+obj/
+__pycache__/
+*.py[cod]
+*$py.class
+node_modules/
+dist/
+build/

@@ -1,0 +1,26 @@
+{
+  "control_server": {
+    "ip": "127.0.0.1",
+    "port": 6970,
+    "timeout_ms": 3000
+  },
+  "decoders": [
+    {
+      "device_id": "REPLACE_WITH_DECODER_DEVICE_ID",
+      "name": "Decoder-01",
+      "hdmi_index": 0
+    }
+  ],
+  "monitoring": {
+    "interval_seconds": 2,
+    "alert_on_disconnect": true,
+    "alert_on_stream_down": true,
+    "alert_on_unstable": true
+  },
+  "metrics_to_check": [
+    "streaming",
+    "stable",
+    "HDMI_MONITOR.status.connected",
+    "subscriptions[HDMI:index].status.state"
+  ]
+}
