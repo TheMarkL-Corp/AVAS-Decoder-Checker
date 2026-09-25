@@ -1,0 +1,14 @@
+{
+  "ControlServerIp": "10.32.32.100",
+  "ControlServerPort": 8080,
+  "TimeoutMs": 3000,
+  "PollingIntervalSeconds": 1.0,
+  "DurationMinutes": 0,
+  "AnomalyWindowSeconds": 2.0,
+  "SelectedDecoderMacs": [
+    "74fe488b22ca",
+    "74fe488b22cb",
+    "74fe483c059e",
+    "74fe483c059f"
+  ]
+}
