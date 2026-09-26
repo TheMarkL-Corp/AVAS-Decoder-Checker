@@ -417,9 +417,9 @@ The codebase includes an extensive automated test suite built on xUnit, Moq, and
 | `EdidParserTests.cs` | Validates VESA EDID 128-byte hex decoding, checksum verification, manufacturer name unpacking, model name descriptor, and serial numbers. | 4 |
 | `CsvLoggingServiceTests.cs` | Validates isolated run directory creation, header formatting, multi-sample appending, and `summary_report.csv` statistics generation. | 4 |
 | `MonitorEngineTests.cs` | Validates start/stop lifecycle, periodic polling loop execution, cancellation tokens, and event dispatching. | 4 |
-| `MainViewModelTests.cs` | Validates MVVM command bindings, decoder selection persistence, UI property change notifications, and timer execution. | 4 |
+| `MainViewModelTests.cs` | Validates MVVM command bindings, decoder selection persistence, dynamic AppVersion consistency, and timer execution. | 5 |
 | `SettingsServiceTests.cs` | Validates JSON deserialization, missing file defaults, and file write persistence. | 4 |
-| **Total Automated Tests** | **All passing (0 failures, 0 skipped)** | **49** |
+| **Total Automated Tests** | **All passing (0 failures, 0 skipped)** | **50** |
 
 ---
 

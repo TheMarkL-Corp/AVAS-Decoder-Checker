@@ -103,13 +103,13 @@ AVAS-Decoder-Checker/
 │   ├── config.default.json               # Default configuration fallback
 │   └── settings.json                     # Active runtime settings
 ├── docs/
-│   ├── SOFTWARE_SPECIFICATION.md         # Comprehensive software specification (v1.0.2)
-│   ├── ARCHITECTURE.md                   # High-level architecture summary
+│   ├── SOFTWARE_SPECIFICATION.md         # Comprehensive software specification (v1.0.3)
+│   ├── ARCHITECTURE.md                   # High-level architecture summary (v1.0.3)
 │   ├── SDVOE_REFERENCE.md                # SDVoE API / VOIPS reference
 │   └── superpowers/                      # Superpowers specs & execution plans
 ├── src/AVASDecoderChecker/
 │   ├── App.xaml / App.xaml.cs            # WPF Application bootstrap
-│   ├── AssemblyInfo.cs                   # Assembly version info (1.0.2.0)
+│   ├── AssemblyInfo.cs                   # Assembly version info (1.0.3.0)
 │   ├── AVASDecoderChecker.csproj         # Project configuration (net8.0-windows)
 │   ├── MainWindow.xaml / .cs             # Modern Dark Slate Dashboard UI
 │   ├── Converters/
@@ -167,15 +167,15 @@ AVAS-Decoder-Checker/
 
 ## 5. Verification & Testing Status
 
-- **Automated Tests**: **41 / 41 passing** (`dotnet test` passed with 0 failures, 0 skipped).
+- **Automated Tests**: **50 / 50 passing** (`dotnet test` passed with 0 failures, 0 skipped).
 - **Build Configurations**: Builds cleanly in both `Debug` and `Release` configurations.
-- **Assembly Version**: `1.0.2.0` (`src/AVASDecoderChecker/AssemblyInfo.cs`).
+- **Assembly Version**: `1.0.3.0` (`src/AVASDecoderChecker/AssemblyInfo.cs`).
 - **Git Remote & Releases**:
   - Remote: `https://github.com/TheMarkL-Corp/AVAS-Decoder-Checker`
-  - Latest Release Tag: `v1.0.2`
+  - Latest Release Tag: `v1.0.3`
   - Release Packages Attached:
-    - `AVAS-Decoder-Checker-v1.0.2.zip` (663,704 bytes)
-    - `AVAS-Decoder-Checker.zip` (663,704 bytes)
+    - `AVAS-Decoder-Checker-v1.0.3.zip` (666,327 bytes)
+    - `AVAS-Decoder-Checker.zip` (666,327 bytes)
 - **Documentation**:
   - Software Specification: [`docs/SOFTWARE_SPECIFICATION.md`](file:///c:/Users/POC-615/Documents/GitHub/AVAS-Decoder-Checker/docs/SOFTWARE_SPECIFICATION.md)
   - User Guide & Overview: [`README.md`](file:///c:/Users/POC-615/Documents/GitHub/AVAS-Decoder-Checker/README.md)

@@ -237,6 +237,22 @@ namespace AVASDecoderChecker.Tests
             Assert.NotEmpty(vm.ActivityLogs);
             Assert.Contains(vm.ActivityLogs, log => log.Contains("POST_REBOOT_TIMEOUT") && log.Contains("Decoder-Right"));
         }
+
+        [Fact]
+        public void AppVersion_AndUiProperties_AreConsistentWithAssembly()
+        {
+            var fakeSettings = new FakeSettingsService();
+            var fakeSdvoe = new FakeSdvoeService();
+            var fakeLogger = new CsvLoggingService(Path.GetTempPath());
+            var engine = new MonitorEngine(fakeSdvoe, fakeLogger);
+
+            var vm = new MainViewModel(fakeSettings, fakeSdvoe, engine);
+
+            Assert.Equal("1.0.3", vm.AppVersion);
+            Assert.Equal("v1.0.3", vm.AppVersionBadge);
+            Assert.Equal("AVAS SDVoE Decoder Stream Checker (v1.0.3)", vm.WindowTitle);
+            Assert.Equal("AVAS Decoder Checker v1.0.3 (.NET 8.0)", vm.AppFooterText);
+        }
     }
 
     public class FakeMonitorEngine : IMonitorEngine

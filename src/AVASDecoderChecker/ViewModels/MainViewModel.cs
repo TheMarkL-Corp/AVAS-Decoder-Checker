@@ -81,6 +81,29 @@ namespace AVASDecoderChecker.ViewModels
 
         #region Public Properties
 
+        #region Application Information & Versioning
+        public string AppVersion => GetAppVersion();
+        public string AppVersionBadge => $"v{AppVersion}";
+        public string WindowTitle => $"AVAS SDVoE Decoder Stream Checker (v{AppVersion})";
+        public string AppFooterText => $"AVAS Decoder Checker v{AppVersion} (.NET 8.0)";
+
+        private static string GetAppVersion()
+        {
+            try
+            {
+                var ver = typeof(MainViewModel).Assembly.GetName().Version;
+                if (ver != null && ver.Major > 0)
+                {
+                    return ver.ToString(3);
+                }
+            }
+            catch
+            {
+            }
+            return "1.0.3";
+        }
+        #endregion
+
         public string ServerIp
         {
             get => _serverIp;

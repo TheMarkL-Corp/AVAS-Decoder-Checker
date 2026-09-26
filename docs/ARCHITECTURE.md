@@ -1,4 +1,4 @@
-# AVAS Decoder HDMI Stream Checker Architecture (v1.0.2)
+# AVAS Decoder HDMI Stream Checker Architecture (v1.0.3)
 
 > **Document Type:** System Architecture Reference  
 > **Detailed Specification:** For the complete, exhaustive software specification covering all telemetry metrics, state machines, protocol behaviors, and schemas, refer to [`docs/SOFTWARE_SPECIFICATION.md`](file:///c:/Users/POC-615/Documents/GitHub/AVAS-Decoder-Checker/docs/SOFTWARE_SPECIFICATION.md).
