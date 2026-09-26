@@ -1,5 +1,11 @@
 # AVAS SDVoE Decoder (RX) HDMI Stream Checker (v1.0.2)
 
+> **GitHub Repository:** [TheMarkL-Corp/AVAS-Decoder-Checker](https://github.com/TheMarkL-Corp/AVAS-Decoder-Checker)  
+> **Latest Release:** [Release v1.0.2](https://github.com/TheMarkL-Corp/AVAS-Decoder-Checker/releases/tag/v1.0.2)  
+> **Direct Download:** [AVAS-Decoder-Checker-v1.0.2.zip](https://github.com/TheMarkL-Corp/AVAS-Decoder-Checker/releases/download/v1.0.2/AVAS-Decoder-Checker-v1.0.2.zip)  
+> **Comprehensive Technical Spec:** [`docs/SOFTWARE_SPECIFICATION.md`](docs/SOFTWARE_SPECIFICATION.md)  
+> **Architecture Reference:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)  
+
 A modern, high-performance C# .NET 8.0 WPF diagnostic dashboard and health monitor for AVAS / SDVoE hardware environments. It connects to the SDVoE Control Server, discovers all RX decoders and upstream TX transmitters, tracks real-time HDMI streaming and display sink conditions, isolates black screen root causes between the **Decoder**, the **Display**, and the **Source PC**, and provides automated **Anomaly Detection** with a strict **2.0-second post-reboot recovery window** and **mid-stream intermittent blackout detection**.
 
 ---
