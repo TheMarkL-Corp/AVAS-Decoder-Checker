@@ -57,13 +57,26 @@ namespace AVASDecoderChecker.Models
         public bool HasInternalErrorCode { get; set; }
         public int InternalErrorCode { get; set; }
 
+        // Network Interface & Power State Diagnostics (v1.0.3)
+        public string NetworkIpMode { get; set; } = "UNKNOWN"; // DHCP, STATIC, UNKNOWN
+        public string SubnetMask { get; set; } = string.Empty;
+        public string GatewayIp { get; set; } = string.Empty;
+        public bool IsDhcpFault { get; set; }
+        public bool IsPowerLoss { get; set; }
+        public bool IsNetworkLinkDown { get; set; }
+        public bool IsDeviceActive { get; set; } = true;
+
         /// <summary>
         /// Root Cause Fault Attribution:
         /// NONE (Healthy),
         /// SOURCE_REBOOTING (Video source PC booting / TX no signal),
+        /// POST_REBOOT_RECOVERY_TIMEOUT (Recovery exceeded 2.0s post-boot window),
         /// DECODER_PLL_DESYNC (Anomalous ~83.8% pixel clock: 248.8 or 497.7 MHz),
         /// DECODER_DUAL_DESYNC (Dual-link companion unsynchronized),
         /// DECODER_STREAM_LOSS (Subscribed but clock unlocked while source awake),
+        /// DECODER_DHCP_FAULT (DHCP lease failure: APIPA 169.254.x.x or unassigned 0.0.0.0),
+        /// DECODER_POWER_LOSS (Abrupt power cut: device unreachable + display HPD 0V),
+        /// NETWORK_LINK_DOWN (Network disconnected: device unreachable, but display HPD 5V active),
         /// DISPLAY_HPD_DOWN (Display sleeping or cable unplugged),
         /// DISPLAY_EDID_CORRUPT (Display failed DDC handshake),
         /// DISPLAY_HDCP_BLOCKED (Encrypted content blocked by sink),

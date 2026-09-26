@@ -4,7 +4,7 @@
 > *Last Updated:* 2026-09-26  
 > *Repository:* [TheMarkL-Corp/AVAS-Decoder-Checker](https://github.com/TheMarkL-Corp/AVAS-Decoder-Checker)  
 > *Remote Status:* Public GitHub Repository, synchronized on `origin/main`  
-> *Latest Release:* [`v1.0.2`](https://github.com/TheMarkL-Corp/AVAS-Decoder-Checker/releases/tag/v1.0.2)  
+> *Latest Release:* [`v1.0.3`](https://github.com/TheMarkL-Corp/AVAS-Decoder-Checker/releases/tag/v1.0.3)  
 > *Workspace Root:* `c:\Users\POC-615\Documents\GitHub\AVAS-Decoder-Checker`  
 > *Software Specification:* [`docs/SOFTWARE_SPECIFICATION.md`](file:///c:/Users/POC-615/Documents/GitHub/AVAS-Decoder-Checker/docs/SOFTWARE_SPECIFICATION.md)  
 
@@ -42,10 +42,13 @@ This project is an automated **Decoder (RX) HDMI Stream Checker** tailored for A
      - `DECODER_PLL_DESYNC`: Decoder AVP2000 PLL multiplier desynchronization glitch (~83.8% anomalous pixel clock: 248.8 MHz / 497.7 MHz).
      - `DECODER_DUAL_DESYNC`: Multi-link companion receiver lost synchronization.
      - `DECODER_STREAM_LOSS`: Decoder dropped or unsubscribed from multicast group.
+     - `DECODER_DHCP_FAULT`: Decoder failed to acquire a valid DHCP IP lease (APIPA fallback `169.254.x.x` or unassigned `0.0.0.0`).
+     - `DECODER_POWER_LOSS`: Decoder experienced an abrupt, sudden power loss (device unreachable on LAN + display HPD pin collapses to 0V).
+     - `NETWORK_LINK_DOWN`: Decoder is still powered on, but network connection was lost (device unreachable on LAN, but display HPD 5V remains active).
      - `DISPLAY_HPD_DOWN`: Monitor turned off, in deep sleep, or HDMI cable disconnected (HPD pin 19 low).
      - `DISPLAY_EDID_CORRUPT`: Monitor connected via HPD but unresponsive or corrupted on DDC channel.
      - `DISPLAY_HDCP_BLOCKED`: Sink unauthenticated for HDCP protected media.
-     - `SERVER_TIMEOUT`: Control server communication failure.
+     - `SERVER_TIMEOUT`: Direct LAN socket probe to decoder IP succeeds, but SDVoE Control Server software/port timed out.
 7. **Multi-Level CSV Logging & Run Isolation**:
    - Isolated directory per test cycle: `logs/Test_YYYYMMDD_HHmmss/`.
    - `master_telemetry.csv`: Chronological samples across all selected decoders with full fault attribution, source encoder status, and anomaly timing columns.

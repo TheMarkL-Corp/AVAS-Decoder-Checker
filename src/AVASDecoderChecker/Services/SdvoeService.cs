@@ -141,6 +141,7 @@ namespace AVASDecoderChecker.Services
         }
 
         private readonly ConcurrentDictionary<string, string> _multicastToEncoderMap = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, bool> _lastKnownHpdMap = new(StringComparer.OrdinalIgnoreCase);
 
         public async Task<List<DecoderItem>> QueryDecodersAsync(string ip, int port, int timeoutMs = 5000)
         {
@@ -285,6 +286,7 @@ namespace AVASDecoderChecker.Services
                         var sample = HealthEvaluator.EvaluateDevice(devObj, decoder.IpAddress, encoderMapDict);
                         sample.DecoderName = !string.IsNullOrWhiteSpace(decoder.DeviceName) ? decoder.DeviceName : sample.DecoderName;
                         sample.MacAddress = decoder.MacAddress;
+                        _lastKnownHpdMap[decoder.MacAddress] = sample.IsHpdConnected;
                         return sample;
                     }
 
@@ -296,7 +298,9 @@ namespace AVASDecoderChecker.Services
                         if (response.IsSuccessStatusCode)
                         {
                             string json = await response.Content.ReadAsStringAsync();
-                            return HealthEvaluator.EvaluateJson(json, decoder.MacAddress, decoder.IpAddress, encoderMapDict);
+                            var sample = HealthEvaluator.EvaluateJson(json, decoder.MacAddress, decoder.IpAddress, encoderMapDict);
+                            _lastKnownHpdMap[decoder.MacAddress] = sample.IsHpdConnected;
+                            return sample;
                         }
                     }
                     catch
@@ -304,29 +308,26 @@ namespace AVASDecoderChecker.Services
                         // Ignore fallback failure
                     }
 
-                    return new DecoderTelemetrySample
-                    {
-                        Timestamp = DateTime.Now,
-                        DecoderName = decoder.DeviceName,
-                        MacAddress = decoder.MacAddress,
-                        IpAddress = decoder.IpAddress,
-                        OverallStatus = "FAIL",
-                        FaultAttribution = "SERVER_TIMEOUT",
-                        Notes = "No response from SDVoE server for this device"
-                    };
+                    // Device query timed out from control server. Probe direct LAN socket to distinguish power loss vs server timeout vs network drop
+                    bool isLanAlive = await CheckTcpPortAsync(decoder.IpAddress, 80, 200)
+                                   || await CheckTcpPortAsync(decoder.IpAddress, 8090, 200)
+                                   || await CheckTcpPortAsync(decoder.IpAddress, 23, 200);
+                    bool wasHpd = _lastKnownHpdMap.TryGetValue(decoder.MacAddress, out var hpd) && hpd;
+
+                    return HealthEvaluator.CreateUnreachableSample(decoder.MacAddress, decoder.DeviceName, decoder.IpAddress, isLanAlive, wasHpd);
                 }
                 catch (Exception ex)
                 {
-                    return new DecoderTelemetrySample
+                    bool isLanAlive = false;
+                    try
                     {
-                        Timestamp = DateTime.Now,
-                        DecoderName = decoder.DeviceName,
-                        MacAddress = decoder.MacAddress,
-                        IpAddress = decoder.IpAddress,
-                        OverallStatus = "FAIL",
-                        FaultAttribution = "SERVER_TIMEOUT",
-                        Notes = $"Query exception: {ex.Message}"
-                    };
+                        isLanAlive = await CheckTcpPortAsync(decoder.IpAddress, 80, 200);
+                    }
+                    catch { }
+                    bool wasHpd = _lastKnownHpdMap.TryGetValue(decoder.MacAddress, out var hpd) && hpd;
+                    var sample = HealthEvaluator.CreateUnreachableSample(decoder.MacAddress, decoder.DeviceName, decoder.IpAddress, isLanAlive, wasHpd);
+                    sample.Notes += $" (Exception: {ex.Message})";
+                    return sample;
                 }
             });
         }

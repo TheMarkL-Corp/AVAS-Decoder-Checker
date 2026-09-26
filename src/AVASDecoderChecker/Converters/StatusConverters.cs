@@ -72,6 +72,9 @@ namespace AVASDecoderChecker.Converters
                 "DECODER_PLL_DESYNC" => FailBrush,
                 "DECODER_DUAL_DESYNC" => FailBrush,
                 "DECODER_STREAM_LOSS" => FailBrush,
+                "DECODER_DHCP_FAULT" => FailBrush,
+                "DECODER_POWER_LOSS" => FailBrush,
+                "NETWORK_LINK_DOWN" => FailBrush,
                 "DISPLAY_HPD_DOWN" => FailBrush,
                 "DISPLAY_EDID_CORRUPT" => FailBrush,
                 "DISPLAY_HDCP_BLOCKED" => FailBrush,
@@ -100,7 +103,7 @@ namespace AVASDecoderChecker.Converters
                 "ANOMALY" or "POST_REBOOT_RECOVERY_TIMEOUT" or "MIDSTREAM_INTERMITTENT_DROPOUT" => AnomalyBg,
                 "PASS" or "CONNECTED" or "SUCCESS" or "STREAMING" or "ACTIVE" or "RECEIVING" or "RECEIVED" or "VIDEO RECEIVED" or "DISPLAYING" or "DISPLAYING_VIDEO" or "DISPLAYING VIDEO" or "LOCKED" or "SYNCHRONIZED" or "HAS_VIDEO" or "VIDEO ACTIVE" or "VIDEO_ACTIVE" or "NONE" => PassBg,
                 "WARN" or "UNSUBSCRIBED" or "INFO" or "NO EDID" or "MUTED" or "CLOCK UNSTABLE" or "WAITING_FOR_SOURCE" or "WAITING FOR SOURCE" or "SOURCE_REBOOTING" or "NO_VIDEO" or "REBOOTING" => WarnBg,
-                "FAIL" or "ERROR" or "DISCONNECTED" or "NO STREAM" or "NO VIDEO STREAM" or "NO_STREAM" or "NO CABLE / OFF" or "NO CABLE / DISPLAY OFF" or "NO_DISPLAY" or "HANDSHAKE FAILED" or "HANDSHAKE_FAILED" or "NO TMDS" or "HDCP BLOCKED" or "BLACK_SCREEN" or "BLACK SCREEN (HDCP)" or "DOWN" or "DECODER_PLL_DESYNC" or "DECODER_DUAL_DESYNC" or "DECODER_STREAM_LOSS" or "DISPLAY_HPD_DOWN" or "DISPLAY_EDID_CORRUPT" or "DISPLAY_HDCP_BLOCKED" or "SERVER_TIMEOUT" => FailBg,
+                "FAIL" or "ERROR" or "DISCONNECTED" or "NO STREAM" or "NO VIDEO STREAM" or "NO_STREAM" or "NO CABLE / OFF" or "NO CABLE / DISPLAY OFF" or "NO_DISPLAY" or "HANDSHAKE FAILED" or "HANDSHAKE_FAILED" or "NO TMDS" or "HDCP BLOCKED" or "BLACK_SCREEN" or "BLACK SCREEN (HDCP)" or "DOWN" or "DECODER_PLL_DESYNC" or "DECODER_DUAL_DESYNC" or "DECODER_STREAM_LOSS" or "DECODER_DHCP_FAULT" or "DECODER_POWER_LOSS" or "NETWORK_LINK_DOWN" or "DISPLAY_HPD_DOWN" or "DISPLAY_EDID_CORRUPT" or "DISPLAY_HDCP_BLOCKED" or "SERVER_TIMEOUT" => FailBg,
                 _ => MutedBg
             };
         }

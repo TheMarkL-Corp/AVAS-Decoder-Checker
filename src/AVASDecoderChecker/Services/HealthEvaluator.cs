@@ -183,17 +183,33 @@ namespace AVASDecoderChecker.Services
                 IpAddress = devIp
             };
 
-            // Device Status telemetry: temperature, error codes
+            // Device Status telemetry: temperature, error codes, active state
             var devStatus = dev["status"];
             if (devStatus != null)
             {
                 sample.TemperatureC = devStatus["temperature"]?.Value<int>() ?? 0;
+                sample.IsDeviceActive = devStatus["active"]?.Value<bool>() ?? true;
                 var errObj = devStatus["error_status"];
                 if (errObj != null)
                 {
                     sample.HasInternalErrorCode = errObj["has_error_code"]?.Value<bool>() ?? false;
                     sample.InternalErrorCode = errObj["error_code"]?.Value<int>() ?? 0;
                 }
+            }
+
+            // Network Interface telemetry: IP mode (DHCP vs Static), mask, gateway
+            var devNodes = dev["nodes"] as JArray;
+            var netIfNode = devNodes?.FirstOrDefault(n => n["type"]?.ToString() == "NETWORK_INTERFACE");
+            if (netIfNode != null)
+            {
+                string ipMode = netIfNode["status"]?["ip"]?["mode"]?.ToString()
+                             ?? netIfNode["configuration"]?["ip"]?["mode"]?.ToString()
+                             ?? "UNKNOWN";
+                sample.NetworkIpMode = ipMode.ToUpperInvariant();
+                sample.SubnetMask = netIfNode["status"]?["ip"]?["mask"]?.ToString()
+                                 ?? netIfNode["configuration"]?["ip"]?["mask"]?.ToString() ?? "";
+                sample.GatewayIp = netIfNode["status"]?["ip"]?["gateway"]?.ToString()
+                                ?? netIfNode["configuration"]?["ip"]?["gateway"]?.ToString() ?? "";
             }
 
             // =========================================================================
@@ -453,26 +469,62 @@ namespace AVASDecoderChecker.Services
         {
             var notes = new List<string>();
 
+            // 0. Check for DHCP Fault (APIPA 169.254.x.x or unassigned 0.0.0.0 in DHCP mode)
+            bool isDhcp = string.Equals(sample.NetworkIpMode, "DHCP", StringComparison.OrdinalIgnoreCase);
+            bool isApipa = !string.IsNullOrWhiteSpace(sample.IpAddress) && sample.IpAddress.StartsWith("169.254.", StringComparison.OrdinalIgnoreCase);
+            bool isZeroIp = string.IsNullOrWhiteSpace(sample.IpAddress) || sample.IpAddress == "0.0.0.0";
+
+            if (isDhcp && (isApipa || isZeroIp))
+            {
+                sample.IsDhcpFault = true;
+                sample.FaultAttribution = "DECODER_DHCP_FAULT";
+                if (isApipa)
+                {
+                    notes.Add($"DHCP Lease Failure (APIPA fallback {sample.IpAddress})");
+                }
+                else
+                {
+                    notes.Add("DHCP Unassigned (No IP address)");
+                }
+            }
+
             // 1. Check for PLL Glitch / Anomalous Pixel Clock (~83.8% of normal 297MHz or 594MHz)
             bool isPllAnomalous = (sample.PixelClockMhz >= 240.0 && sample.PixelClockMhz <= 255.0)
                                || (sample.PixelClockMhz >= 490.0 && sample.PixelClockMhz <= 505.0)
                                || (sample.PixelClockMhz >= 390.0 && sample.PixelClockMhz <= 405.0);
 
-            if (isPllAnomalous)
+            if (isPllAnomalous && sample.FaultAttribution == "NONE")
             {
                 sample.FaultAttribution = "DECODER_PLL_DESYNC";
                 notes.Add($"Decoder PLL Miscalculation Glitch ({sample.PixelClockMhz:F1}MHz ~83.8% lock)");
             }
 
             // 2. Check for Dual-Link Desynchronization
-            if (sample.MultiLinkMode == "DUAL" && !string.Equals(sample.MultiLinkStatus, "SYNCHRONIZED", StringComparison.OrdinalIgnoreCase) && sample.MultiLinkStatus != "N/A")
+            if (sample.MultiLinkMode == "DUAL" && !string.Equals(sample.MultiLinkStatus, "SYNCHRONIZED", StringComparison.OrdinalIgnoreCase) && sample.MultiLinkStatus != "N/A" && sample.FaultAttribution == "NONE")
             {
                 sample.FaultAttribution = "DECODER_DUAL_DESYNC";
                 notes.Add($"Dual-Link Companion Desync ({sample.MultiLinkStatus})");
             }
 
-            // 3. Healthy State
-            if (sample.VideoReceivedStatus == "RECEIVED" && sample.DisplayScreenStatus == "DISPLAYING_VIDEO")
+            // 3. Check for Device Inactivity / Power Loss vs Network Link Loss
+            if (!sample.IsDeviceActive && sample.FaultAttribution == "NONE")
+            {
+                if (!sample.IsHpdConnected)
+                {
+                    sample.IsPowerLoss = true;
+                    sample.FaultAttribution = "DECODER_POWER_LOSS";
+                    notes.Add("Decoder Sudden Power Loss (Device Inactive & Display HPD 0V)");
+                }
+                else
+                {
+                    sample.IsNetworkLinkDown = true;
+                    sample.FaultAttribution = "NETWORK_LINK_DOWN";
+                    notes.Add("Network Link Disconnected (Device Inactive, but Display HPD 5V Active)");
+                }
+            }
+
+            // 4. Healthy State
+            if (sample.VideoReceivedStatus == "RECEIVED" && sample.DisplayScreenStatus == "DISPLAYING_VIDEO" && !sample.IsDhcpFault && !sample.IsPowerLoss && !sample.IsNetworkLinkDown)
             {
                 sample.OverallStatus = "PASS";
                 if (sample.FaultAttribution == "NONE")
@@ -486,34 +538,34 @@ namespace AVASDecoderChecker.Services
                 return;
             }
 
-            // 4. Fault Attribution & Isolation
-            if (sample.DisplayScreenStatus == "NO_DISPLAY")
+            // 5. Fault Attribution & Isolation
+            if (sample.FaultAttribution == "NONE")
             {
-                sample.FaultAttribution = "DISPLAY_HPD_DOWN";
-                notes.Add("Display Disconnected / Sleep (HPD Low)");
-            }
-            else if (sample.DisplayScreenStatus == "HANDSHAKE_FAILED")
-            {
-                sample.FaultAttribution = "DISPLAY_EDID_CORRUPT";
-                notes.Add("Display Handshake Failed (Bad EDID)");
-            }
-            else if (sample.DisplayScreenStatus == "BLACK_SCREEN")
-            {
-                sample.FaultAttribution = "DISPLAY_HDCP_BLOCKED";
-                notes.Add("Black Screen (HDCP/Mute)");
-            }
-            else if (sample.VideoReceivedStatus == "NO_STREAM")
-            {
-                if (sample.FaultAttribution == "NONE")
+                if (sample.DisplayScreenStatus == "NO_DISPLAY")
+                {
+                    sample.FaultAttribution = "DISPLAY_HPD_DOWN";
+                    notes.Add("Display Disconnected / Sleep (HPD Low)");
+                }
+                else if (sample.DisplayScreenStatus == "HANDSHAKE_FAILED")
+                {
+                    sample.FaultAttribution = "DISPLAY_EDID_CORRUPT";
+                    notes.Add("Display Handshake Failed (Bad EDID)");
+                }
+                else if (sample.DisplayScreenStatus == "BLACK_SCREEN")
+                {
+                    sample.FaultAttribution = "DISPLAY_HDCP_BLOCKED";
+                    notes.Add("Black Screen (HDCP/Mute)");
+                }
+                else if (sample.VideoReceivedStatus == "NO_STREAM")
                 {
                     sample.FaultAttribution = "SOURCE_REBOOTING";
+                    notes.Add("No Video Stream from Encoder (Clock Unlocked)");
                 }
-                notes.Add("No Video Stream from Encoder (Clock Unlocked)");
-            }
-            else if (sample.VideoReceivedStatus == "UNSUBSCRIBED")
-            {
-                sample.FaultAttribution = "DECODER_STREAM_LOSS";
-                notes.Add("Decoder Unsubscribed");
+                else if (sample.VideoReceivedStatus == "UNSUBSCRIBED")
+                {
+                    sample.FaultAttribution = "DECODER_STREAM_LOSS";
+                    notes.Add("Decoder Unsubscribed");
+                }
             }
 
             // High Thermal Warning
@@ -522,7 +574,13 @@ namespace AVASDecoderChecker.Services
                 notes.Add($"High Chip Temperature ({sample.TemperatureC}°C)");
             }
 
-            if (sample.DisplayScreenStatus == "NO_DISPLAY" || sample.DisplayScreenStatus == "HANDSHAKE_FAILED" || sample.VideoReceivedStatus == "NO_STREAM")
+            if (sample.DisplayScreenStatus == "NO_DISPLAY" ||
+                sample.DisplayScreenStatus == "HANDSHAKE_FAILED" ||
+                sample.VideoReceivedStatus == "NO_STREAM" ||
+                sample.IsDhcpFault ||
+                sample.IsPowerLoss ||
+                sample.IsNetworkLinkDown ||
+                !sample.IsDeviceActive)
             {
                 sample.OverallStatus = "FAIL";
             }
@@ -532,6 +590,47 @@ namespace AVASDecoderChecker.Services
             }
 
             sample.Notes = string.Join("; ", notes);
+        }
+
+        /// <summary>
+        /// Generates a diagnostic telemetry sample when the SDVoE Control Server cannot be queried for a device,
+        /// isolating whether the failure is an abrupt decoder power loss, network cable disconnect, or server glitch.
+        /// </summary>
+        public static DecoderTelemetrySample CreateUnreachableSample(string mac, string name, string ip, bool isLanPingable, bool wasHpdConnected)
+        {
+            var sample = new DecoderTelemetrySample
+            {
+                Timestamp = DateTime.Now,
+                MacAddress = mac,
+                DecoderName = string.IsNullOrWhiteSpace(name) ? mac : name,
+                IpAddress = ip,
+                OverallStatus = "FAIL",
+                IsDeviceActive = false,
+                IsHpdConnected = wasHpdConnected && isLanPingable
+            };
+
+            if (isLanPingable)
+            {
+                sample.FaultAttribution = "SERVER_TIMEOUT";
+                sample.Notes = "SDVoE Server Unresponsive (Device MCU is alive and responding on LAN)";
+                sample.DisplayScreenStatus = wasHpdConnected ? "DISPLAYING_VIDEO" : "NO_DISPLAY";
+            }
+            else if (!wasHpdConnected)
+            {
+                sample.IsPowerLoss = true;
+                sample.FaultAttribution = "DECODER_POWER_LOSS";
+                sample.Notes = "Decoder Sudden Power Loss (Unreachable on LAN & Display HPD 0V)";
+                sample.DisplayScreenStatus = "NO_DISPLAY";
+            }
+            else
+            {
+                sample.IsNetworkLinkDown = true;
+                sample.FaultAttribution = "NETWORK_LINK_DOWN";
+                sample.Notes = "Network Link Down (Device unreachable on LAN, Display HPD remained High)";
+                sample.DisplayScreenStatus = "WAITING_FOR_SOURCE";
+            }
+
+            return sample;
         }
 
         /// <summary>

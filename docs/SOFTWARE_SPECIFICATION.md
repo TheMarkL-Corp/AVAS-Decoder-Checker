@@ -1,7 +1,7 @@
 # Software Specification: AVAS Decoder (RX) HDMI Stream Checker
 
-> **Document Version:** 1.0.2  
-> **Release Target:** v1.0.2  
+> **Document Version:** 1.0.3  
+> **Release Target:** v1.0.3  
 > **Date:** September 26, 2026  
 > **Repository:** [TheMarkL-Corp/AVAS-Decoder-Checker](https://github.com/TheMarkL-Corp/AVAS-Decoder-Checker)  
 > **Target Framework:** C# .NET 8.0 Windows Desktop (`net8.0-windows`)  
@@ -197,19 +197,21 @@ Determines whether the connected display is actively rendering video:
 
 ### 6.2 Root-Cause Fault Attribution Codes (`FaultAttribution`)
 
-When an issue occurs, `HealthEvaluator.ComputeOverall` evaluates the entire hardware state to attribute the fault to one of ten definitive categories:
+When an issue occurs, `HealthEvaluator.ComputeOverall` evaluates the entire hardware state to attribute the fault to one of twelve definitive categories:
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        Fault Attribution Engine                        │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │
-    ┌───────────────────────────────┼──────────────────────────────┐
-    ▼                               ▼                              ▼
-[ Decoder Faults ]          [ Display Faults ]            [ Source/Network ]
-- DECODER_PLL_DESYNC        - DISPLAY_HPD_DOWN            - SOURCE_REBOOTING
-- DECODER_DUAL_DESYNC       - DISPLAY_EDID_CORRUPT        - POST_REBOOT_RECOVERY_TIMEOUT
-- DECODER_STREAM_LOSS       - DISPLAY_HDCP_BLOCKED        - SERVER_TIMEOUT
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                Fault Attribution Engine                                │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │
+    ┌───────────────────────────────────────┼──────────────────────────────────────┐
+    ▼                                       ▼                                      ▼
+[ Decoder Faults ]                  [ Display Faults ]                    [ Source / Network / Power ]
+- DECODER_PLL_DESYNC                - DISPLAY_HPD_DOWN                    - SOURCE_REBOOTING
+- DECODER_DUAL_DESYNC               - DISPLAY_EDID_CORRUPT                - POST_REBOOT_RECOVERY_TIMEOUT
+- DECODER_STREAM_LOSS               - DISPLAY_HDCP_BLOCKED                - DECODER_POWER_LOSS
+- DECODER_DHCP_FAULT                                                      - NETWORK_LINK_DOWN
+                                                                          - SERVER_TIMEOUT
 ```
 
 #### Detailed Definitions:
@@ -222,10 +224,13 @@ When an issue occurs, `HealthEvaluator.ComputeOverall` evaluates the entire hard
    - Window 3: `390.0 MHz <= PixelClock <= 405.0 MHz`
 5. `DECODER_DUAL_DESYNC`: Multi-link companion receiver (`MULTI_LINK_RECEIVER`) lost synchronization (`link_status != "SYNCHRONIZED"`).
 6. `DECODER_STREAM_LOSS`: Decoder unexpectedly unsubscribed or dropped out of the multicast stream group.
-7. `DISPLAY_HPD_DOWN`: HDMI cable disconnected, broken pin 19, or display panel entered sleep/standby mode (`isHpdConnected == false`).
-8. `DISPLAY_EDID_CORRUPT`: Monitor connected via HDMI but failed DDC I2C handshake or corrupted VESA EDID block (`EdidInfo.IsValid == false`).
-9. `DISPLAY_HDCP_BLOCKED`: Content stream blocked due to failed HDCP authentication or repeater handshake rejection.
-10. `SERVER_TIMEOUT`: SDVoE control server unresponsive or network socket dropped.
+7. `DECODER_DHCP_FAULT`: Decoder failed to acquire a valid DHCP IP lease from the network router. Detected when `configuration.ip.mode == "DHCP"` and `status.ip.address` reverts to Link-Local APIPA (`169.254.x.x`) or unassigned `0.0.0.0`.
+8. `DECODER_POWER_LOSS`: Decoder experienced an abrupt, sudden power loss (DC power plug pulled, PDU down, or hardware brownout). Detected when the device becomes unresponsive to both control server and direct LAN socket probes, and its physical HDMI 5V transmitter rail collapses, forcing the connected display's Hot-Plug Detect (HPD Pin 19) to `0V / LOW`.
+9. `NETWORK_LINK_DOWN`: Decoder is still powered on, but its physical network connection was severed (10G Ethernet cable unplugged or switch port disabled). The device is unreachable on the network, but its HDMI transmitter continues asserting 5V, keeping the display's Hot-Plug Detect (HPD) `HIGH`.
+10. `DISPLAY_HPD_DOWN`: HDMI cable disconnected from display, broken pin 19, or display panel entered sleep/standby mode (`isHpdConnected == false`).
+11. `DISPLAY_EDID_CORRUPT`: Monitor connected via HDMI but failed DDC I2C handshake or corrupted VESA EDID block (`EdidInfo.IsValid == false`).
+12. `DISPLAY_HDCP_BLOCKED`: Content stream blocked due to failed HDCP authentication or repeater handshake rejection.
+13. `SERVER_TIMEOUT`: Direct LAN probe to decoder IP succeeds, confirming the device hardware and network are 100% alive, but the SDVoE Control Server software/port timed out.
 
 ---
 
@@ -406,6 +411,7 @@ The codebase includes an extensive automated test suite built on xUnit, Moq, and
 |---|---|---|
 | `AnomalyDetectorTests.cs` | Validates strict 2.0s post-reboot recovery window, mid-stream blackout detection, blackout duration calculation, recovery before reboot, and reset on reboot cycle. | 5 |
 | `EncoderEvaluationTests.cs` | Validates TX telemetry extraction, single-link stability, dual-link companion pairing, composite stability logic, and error code handling. | 5 |
+| `DhcpAndPowerFaultTests.cs` | Validates DHCP lease failure (APIPA 169.254.x.x, unassigned 0.0.0.0), sudden power loss (device unreachable + HPD 0V), network link disconnect (device unreachable + HPD 5V active), and direct LAN ping differentiation. | 8 |
 | `HealthEvaluatorOverhaulTests.cs` | Validates comprehensive fault attribution matrix (`SOURCE_REBOOTING`, `DECODER_PLL_DESYNC`, `DISPLAY_HPD_DOWN`, `DISPLAY_EDID_CORRUPT`, `DISPLAY_HDCP_BLOCKED`). | 5 |
 | `TelemetryEvaluationTests.cs` | Validates legacy and JSON-based decoder telemetry evaluation, question badges, and thermal warnings. | 6 |
 | `EdidParserTests.cs` | Validates VESA EDID 128-byte hex decoding, checksum verification, manufacturer name unpacking, model name descriptor, and serial numbers. | 4 |
@@ -413,7 +419,7 @@ The codebase includes an extensive automated test suite built on xUnit, Moq, and
 | `MonitorEngineTests.cs` | Validates start/stop lifecycle, periodic polling loop execution, cancellation tokens, and event dispatching. | 4 |
 | `MainViewModelTests.cs` | Validates MVVM command bindings, decoder selection persistence, UI property change notifications, and timer execution. | 4 |
 | `SettingsServiceTests.cs` | Validates JSON deserialization, missing file defaults, and file write persistence. | 4 |
-| **Total Automated Tests** | **All passing (0 failures, 0 skipped)** | **41** |
+| **Total Automated Tests** | **All passing (0 failures, 0 skipped)** | **49** |
 
 ---
 
@@ -427,9 +433,9 @@ The codebase includes an extensive automated test suite built on xUnit, Moq, and
 ### 12.2 GitHub Repository
 - **Remote URL**: `https://github.com/TheMarkL-Corp/AVAS-Decoder-Checker`
 - **Default Branch**: `main`
-- **Release Version**: `v1.0.2`
+- **Release Version**: `v1.0.3`
 - **Release Assets**:
-  - `AVAS-Decoder-Checker-v1.0.2.zip` (Complete release package)
+  - `AVAS-Decoder-Checker-v1.0.3.zip` (Complete release package)
   - `AVAS-Decoder-Checker.zip` (Latest alias package)
 
 ### 12.3 Launch Scripts

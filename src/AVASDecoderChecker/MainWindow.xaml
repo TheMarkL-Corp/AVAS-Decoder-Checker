@@ -825,8 +825,17 @@
                                                     <TextBlock Text="{Binding SelectedTelemetryRow.TemperatureC, StringFormat='{}{0:F1} °C', TargetNullValue='N/A'}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="11"/>
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                    <TextBlock Text="IP Mode: " Foreground="{StaticResource TextSecondary}" FontSize="11"/>
+                                                    <TextBlock Text="{Binding SelectedTelemetryRow.NetworkIpMode, TargetNullValue='UNKNOWN'}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="11"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
                                                     <TextBlock Text="Network Port: " Foreground="{StaticResource TextSecondary}" FontSize="11"/>
                                                     <TextBlock Text="{Binding SelectedTelemetryRow.NetworkPortSpeed, TargetNullValue='10G'}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="11"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                    <TextBlock Text="Fault Status: " Foreground="{StaticResource TextSecondary}" FontSize="11"/>
+                                                    <TextBlock Text="{Binding SelectedTelemetryRow.FaultAttribution, TargetNullValue='NONE'}" FontWeight="SemiBold"
+                                                               Foreground="{Binding SelectedTelemetryRow.FaultAttribution, Converter={StaticResource StatusToColorConverter}}" FontSize="11"/>
                                                 </StackPanel>
                                             </StackPanel>
                                         </Border>
